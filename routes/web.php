@@ -29,6 +29,8 @@ Route::prefix('admin')->group(function() {
         $order = \App\Models\Order::where('order_number', $order_number)->first();
         return view('order_status', compact('order'));
     })->name('order.status');
+
+    Route::get('/order/receipt/{order_number}', [OrderController::class, 'showReceipt'])->name('order.receipt');
 });
 
 // routes/web.php
