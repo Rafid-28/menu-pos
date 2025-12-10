@@ -30,8 +30,8 @@ Route::prefix('admin')->group(function() {
         return view('order_status', compact('order'));
     })->name('order.status');
 
-    Route::get('/order/receipt/{order_number}', [OrderController::class, 'showReceipt'])->name('order.receipt');
 });
 
 // routes/web.php
+Route::get('/order/receipt/{order_number}', [OrderController::class, 'showReceipt'])->name('order.receipt');
 Route::post('/midtrans-callback', [OrderController::class, 'callback']);

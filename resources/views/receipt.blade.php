@@ -4,21 +4,29 @@
 <div class="row justify-content-center">
     <div class="col-md-6">
         <div class="card shadow">
-            <div class="card-header bg-success text-white text-center">
-                <h3>Terima Kasih, Pesanan Berhasil Dibuat!</h3>
+            <div class="card-header bg-primary text-white text-center">
+                <h3>Detail Transaksi</h3>
             </div>
             <div class="card-body">
                 <h5 class="card-title">Struk Pembayaran</h5>
                 <hr>
 
-                @if($order->status == 'paid')
-                    <div class="alert alert-success text-center">PEMBAYARAN SUDAH DITERIMA!</div>
-                @elseif($transaction_status == 'capture' || $transaction_status == 'settlement')
-                    <div class="alert alert-success text-center">PEMBAYARAN SUKSES DARI MIDTRANS</div>
-                @elseif($transaction_status == 'pending')
-                    <div class="alert alert-warning text-center">MENUNGGU PEMBAYARAN (PENDING)</div>
+                @php
+                    $final_status = $order->status;
+                    if ($final_status == 'pending' && ($transaction_status == 'capture' || $transaction_status == 'settlement')) {
+                        // Jika Webhook belum sempat update, tapi redirect sudah success
+                        $final_status = 'paid';
+                    } elseif ($final_status == 'pending' && $transaction_status == 'pending') {
+                         $final_status = 'pending';
+                    }
+                @endphp
+
+                @if($final_status == 'paid')
+                    <div class="alert alert-success text-center">PEMBAYARAN SUKSES!</div>
+                @elseif($final_status == 'pending')
+                    <div class="alert alert-warning text-center">MENUNGGU PEMBAYARAN. Silakan selesaikan pembayaran.</div>
                 @else
-                    <div class="alert alert-info text-center">STATUS: {{ strtoupper($order->status) }}</div>
+                    <div class="alert alert-danger text-center">STATUS TRANSAKSI: GAGAL</div>
                 @endif
                 
                 <p><strong>Order ID:</strong> {{ $order->order_number }}</p>
@@ -39,8 +47,8 @@
                 <h4>Total Harga: Rp {{ number_format($order->total_price) }}</h4>
 
                 <p class="mt-4 text-center">
-                    <a href="/" class="btn btn-primary">Pesan Lagi</a>
-                    <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary">Lihat Status Kasir</a>
+                    <a href="{{ route('menu') }}" class="btn btn-primary">Pesan Lagi</a>
+                    <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary">Lihat Dashboard Kasir</a>
                 </p>
             </div>
         </div>

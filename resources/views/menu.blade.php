@@ -105,11 +105,9 @@
             },
             success: function(response) {
                 if (response.snap_token) {
-                    // Panggil Snap Midtrans
                     window.snap.pay(response.snap_token, {
                         onSuccess: function(result){
-                            alert("Pembayaran Berhasil!");
-                            window.location.reload();
+                            alert("Pembayaran berhasil! Mengarahkan ke struk...");
                         },
                         onPending: function(result){ alert("Menunggu pembayaran!"); },
                         onError: function(result){ alert("Pembayaran gagal!"); }
