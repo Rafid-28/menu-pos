@@ -13,7 +13,8 @@ class Product extends Model
         'name',
         'category_id',
         'price',
-        'is_available', // Pastikan ini ada dan namanya benar
+        'is_available',
+        'image' // Pastikan ini ada dan namanya benar
     ]; 
     
     // WAJIB: Casting is_available ke boolean agar database menerima 0/1

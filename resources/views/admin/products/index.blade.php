@@ -30,6 +30,7 @@
                     <tr>
                         <th>ID</th>
                         <th>Nama</th>
+                        <th>Gambar</th>
                         <th>Kategori</th>
                         <th>Harga</th>
                         <th>Tersedia</th>
@@ -41,7 +42,19 @@
                     <tr>
                         <td>{{ $product->id }}</td>
                         <td>{{ $product->name }}</td>
+                        
+                        {{-- KOLOM GAMBAR --}}
+                        <td>
+                            @if ($product->image)
+                                <img src="{{ \Storage::url($product->image) }}" alt="{{ $product->name }}" style="max-width: 50px; max-height: 50px;">
+                            @else
+                                Tidak ada
+                            @endif
+                        </td>
+                        
+                        {{-- KOLOM KATEGORI --}}
                         <td>{{ $product->category->name ?? '-' }}</td>
+                        
                         <td>Rp {{ number_format($product->price) }}</td>
                         <td>
                             <span class="badge badge-{{ $product->is_available ? 'success' : 'danger' }}">
@@ -57,7 +70,8 @@
                                 data-name="{{ $product->name }}"
                                 data-category="{{ $product->category_id }}"
                                 data-price="{{ $product->price }}"
-                                data-available="{{ $product->is_available ? 1 : 0 }}">Edit</button>
+                                data-available="{{ $product->is_available ? 1 : 0 }}"
+                                data-image="{{ $product->image }}">Edit</button> {{-- PENTING: data-image DITAMBAHKAN --}}
                             
                             {{-- Form Hapus Produk --}}
                             <form action="{{ route('admin.product.destroy', $product->id) }}" method="POST" class="d-inline">
@@ -75,6 +89,7 @@
 </div>
 @endsection
 
+{{-- MODAL TAMBAH PRODUK (CREATE) --}}
 <div class="modal fade" id="addProductModal" tabindex="-1" role="dialog" aria-labelledby="addProductModalLabel" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
@@ -82,13 +97,20 @@
         <h5 class="modal-title" id="addProductModalLabel">Tambah Produk Baru</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
       </div>
-      <form action="{{ route('admin.product.store') }}" method="POST">
+      <form action="{{ route('admin.product.store') }}" method="POST" enctype="multipart/form-data"> {{-- PENTING: enctype DITAMBAHKAN --}}
           @csrf
           <div class="modal-body">
               <div class="form-group">
                   <label for="create_name">Nama Produk</label>
                   <input type="text" class="form-control" id="create_name" name="name" required>
               </div>
+              
+              {{-- INPUT GAMBAR --}}
+              <div class="form-group">
+                  <label for="create_image">Gambar Produk (Opsional)</label>
+                  <input type="file" class="form-control-file" id="create_image" name="image" accept="image/*">
+              </div>
+
               <div class="form-group">
                   <label for="create_category_id">Kategori</label>
                   <select class="form-control" id="create_category_id" name="category_id" required>
@@ -115,6 +137,7 @@
   </div>
 </div>
 
+{{-- MODAL EDIT PRODUK (UPDATE) --}}
 <div class="modal fade" id="editProductModal" tabindex="-1" role="dialog" aria-labelledby="editProductModalLabel" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
@@ -124,14 +147,25 @@
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <form id="editProductForm" method="POST">
+      <form id="editProductForm" method="POST" enctype="multipart/form-data"> {{-- PENTING: enctype DITAMBAHKAN --}}
           @csrf
-          @method('PUT') {{-- PENTING! Menggunakan method PUT untuk Update --}}
+          @method('PUT')
           <div class="modal-body">
               <div class="form-group">
                   <label for="edit_product_name">Nama Produk</label>
                   <input type="text" class="form-control" id="edit_product_name" name="name" required>
               </div>
+              
+              {{-- INPUT GAMBAR DAN PREVIEW --}}
+              <div class="form-group">
+                  <label for="edit_product_image">Ganti Gambar (Opsional)</label>
+                  <div id="current_image_preview" class="mb-2">
+                       {{-- Tempat preview gambar lama --}}
+                  </div>
+                  <input type="file" class="form-control-file" id="edit_product_image" name="image" accept="image/*">
+                  <small class="form-text text-muted">Abaikan jika tidak ingin mengganti gambar.</small>
+              </div>
+              
               <div class="form-group">
                   <label for="edit_product_category">Kategori</label>
                   <select class="form-control" id="edit_product_category" name="category_id" required>
@@ -164,24 +198,26 @@
         $('.edit-product-btn').on('click', function() {
             var productId = $(this).data('id');
             var productName = $(this).data('name');
-            var productCategory = $(this).data('category'); // category_id
+            var productCategory = $(this).data('category');
             var productPrice = $(this).data('price');
             var productAvailable = $(this).data('available');
-            
-            // 1. Isi input form Modal Edit
+            var productImage = $(this).data('image'); 
+
             $('#edit_product_name').val(productName);
-            $('#edit_product_category').val(productCategory); // Set selected option
+            $('#edit_product_category').val(productCategory);
             $('#edit_product_price').val(productPrice);
-            
-            // Set checkbox ketersediaan (0 = false, 1 = true)
             $('#edit_product_available').prop('checked', productAvailable == 1);
-            
-            // 2. Set action URL untuk form edit (Tujuan: route admin.product.update)
             var updateUrl = '{{ url('admin/products') }}/' + productId;
             $('#editProductForm').attr('action', updateUrl);
+            var imagePreviewHtml = '';
+            if (productImage && productImage !== 'null') { 
+                var imageUrl = '{{ \Storage::url('') }}' + productImage; 
+                imagePreviewHtml = '<p>Gambar Saat Ini:</p><img src="' + imageUrl + '" alt="Gambar Lama" style="max-width: 100px; height: auto;">';
+            }
+            $('#current_image_preview').html(imagePreviewHtml);
+            $('#edit_product_image').val(''); 
         });
 
-        // Optional: Jika terjadi error validasi, modal Tambah Produk akan muncul kembali
         @if ($errors->any() && (old('name') || old('category_id')))
             $('#addProductModal').modal('show');
         @endif

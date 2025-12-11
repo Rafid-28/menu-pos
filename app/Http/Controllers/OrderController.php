@@ -30,7 +30,6 @@ class OrderController extends Controller
     public function checkout(Request $request)
     {
         try {
-            // 1. INISIALISASI VARIABEL AWAL
             $orderNumber = 'ORD-' . time() . rand(100,999);
             $total = 0;
             $items = $request->items; // Item dari AJAX
@@ -81,14 +80,13 @@ class OrderController extends Controller
                     'first_name' => $request->customer_name,
                 ],
                 // Callbacks untuk redirect setelah pembayaran
-                'callbacks' => [
+                    'callbacks' => [
                     'finish' => $ngrok_url . '/order/receipt/' . $orderNumber, 
                     'error' => $ngrok_url . '/order/receipt/' . $orderNumber,
                     'unfinish' => $ngrok_url . '/order/receipt/' . $orderNumber,
                 ]
             ];
 
-            // 6. DAPATKAN SNAP TOKEN
             $snapToken = Snap::getSnapToken($params);
             $order->update(['snap_token' => $snapToken]);
 
@@ -132,7 +130,6 @@ class OrderController extends Controller
                     Log::info('Order status updated to PAID via Webhook', ['order_id' => $order_id]);
                 }
             }
-            // Pastikan selalu merespon 200 OK ke Midtrans jika signature valid
             return response('OK', 200); 
         }
         // Signature gagal
@@ -146,7 +143,6 @@ class OrderController extends Controller
                         ->where('order_number', $order_number)
                         ->firstOrFail();
         
-        // Ambil status dari query parameter (untuk tampilan awal)
         $transaction_status = request('transaction_status');
 
         return view('receipt', compact('order', 'transaction_status'));

@@ -7,17 +7,14 @@ use App\Models\Product;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\DB; // Tambahkan ini jika Anda menggunakan transaksi/rollback
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
-    // --- DASHBOARD & ORDER MANAGEMENT ---
-    
-    // Method untuk Dashboard (Jika digunakan oleh route /admin/dashboard)
     public function index()
     {
-        // Contoh data untuk dashboard
-        $totalSales = Order::where('status', 'paid')->sum('total_amount'); // Asumsi ada kolom total_amount
+        $totalSales = Order::where('status', 'paid')->sum('total_amount');
         $pendingOrders = Order::where('status', 'pending')->count();
         $categoriesCount = Category::count();
         $productsCount = Product::count();
@@ -53,9 +50,6 @@ class AdminController extends Controller
         $products = Product::where('is_available', true)->get();
         return view('admin.orders.create', compact('products'));
     }
-
-
-    // --- CRUD CATEGORY ---
     
     public function categoriesIndex()
     {
@@ -97,8 +91,6 @@ class AdminController extends Controller
         $category->delete();
         return back()->with('success', 'Kategori berhasil dihapus.');
     }
-
-    // --- CRUD PRODUCT ---
     
     public function productsIndex()
     {
@@ -107,22 +99,23 @@ class AdminController extends Controller
         return view('admin.products.index', compact('products', 'categories'));
     }
 
-    // app/Http/Controllers/AdminController.php
-
 public function storeProduct(Request $request)
 {
-    // AKTIFKAN VALIDASI DENGAN RULE YANG AMAN
     $request->validate([
         'name' => 'required|string|max:255',
-        // Rule aman untuk ID
         'category_id' => 'required|exists:categories,id', 
-        // Menggunakan numeric untuk harga, lebih fleksibel dari integer
         'price' => 'required|numeric|min:0', 
         'is_available' => 'sometimes', 
+        'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
     ]);
 
     $data = $request->except('_token');
-    $data['is_available'] = $request->has('is_available'); 
+    $data['is_available'] = $request->has('is_available');
+    
+    if ($request->hasFile('image')) {
+        $path = $request->file('image')->store('products', 'public');
+        $data['image'] = str_replace('public/', '', $path); 
+    }
 
     \App\Models\Product::create($data); 
     return back()->with('success', 'Produk baru berhasil ditambahkan.');
@@ -132,18 +125,25 @@ public function updateProduct(Request $request, $id)
 {
     $product = \App\Models\Product::findOrFail($id);
 
-    // Samakan rule dengan storeProduct
     $request->validate([
         'name' => 'required|string|max:255',
-        // Rule aman (dihapus '|integer')
         'category_id' => 'required|exists:categories,id',
-        // Ganti 'integer' menjadi 'numeric'
         'price' => 'required|numeric|min:0',
         'is_available' => 'sometimes',
+        'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
     ]);
     
     $data = $request->except('_token', '_method');
     $data['is_available'] = $request->has('is_available'); 
+
+    if ($request->hasFile('image')) {
+        if ($product->image) {
+            Storage::delete('public/' . $product->image);
+        }
+        
+        $path = $request->file('image')->store('products', 'public');
+        $data['image'] = str_replace('public/', '', $path);
+    }
 
     $product->update($data);
     return back()->with('success', 'Produk berhasil diperbarui.');
